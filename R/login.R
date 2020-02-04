@@ -107,19 +107,18 @@ login <- function(input, output, session, data, user_col, pwd_col, sodium_hashed
   shiny::observeEvent(input$button, {
     
     # check for match of input username to username column in data
-    # row_username <- which(dplyr::pull(data, !!users) == input$user_name)
-    row_username <- which(dplyr::pull(data, !!users) %in% input$user_name) #
+    row_username <- which(dplyr::pull(data, !!users) == input$user_name)
     
     if (length(row_username)) {
-      # row_password <- dplyr::filter(data,dplyr::row_number() == row_username) 
-      row_password <- dplyr::filter(data,dplyr::row_number() %in% row_username) #
-      row_password <- dplyr::pull(row_password, !!pwds)
+      data <- dplyr::filter(data, dplyr::row_number %in% row_username)
+      
+      # row_password <- dplyr::filter(data,dplyr::row_number() == row_username)
+      row_password <- dplyr::pull(data, !!pwds)
+      row_username <- dplyr::pull(data, !!users)
       if (sodium_hashed) {
-        # password_match <- sodium::password_verify(row_password, input$password)
-        password_which <- which(mapply(sodium::password_verify, row_password, input$password)) #
-        row_password <- row_password[[password_match]] #
-        password_match <- any(password_which) #
-        row_user_pw <- row_username[[password_which]]
+        password_match <- mapply(sodium::password_verify, row_password, input$password)
+        data <- dplyr::filter(data, dplyr::row_number() == which(password_match))
+        password_match <- any(password_match)
       } else {
         password_match <- identical(row_password, input$password)
       }
@@ -129,10 +128,9 @@ login <- function(input, output, session, data, user_col, pwd_col, sodium_hashed
     
     # if user name row and password name row are same, credentials are valid
     # if (length(row_username) == 1 && password_match) {
-    if (length(row_username) && password_match) {
+    if (length(row_username) && password_match) { #
       credentials$user_auth <- TRUE
-      # credentials$info <- dplyr::filter(data, !!users == input$user_name)
-      credentials$info <- dplyr::filter(data, dplyr::row_number() == row_user_pw) #
+      credentials$info <- dplyr::filter(data, !!users == input$user_name)
     } else { # if not valid temporarily show error message to user
       shinyjs::toggle(id = "error", anim = TRUE, time = 1, animType = "fade")
       shinyjs::delay(5000, shinyjs::toggle(id = "error", anim = TRUE, time = 1, animType = "fade"))
