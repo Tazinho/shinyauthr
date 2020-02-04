@@ -110,10 +110,14 @@ login <- function(input, output, session, data, user_col, pwd_col, sodium_hashed
     row_username <- which(dplyr::pull(data, !!users) == input$user_name)
     
     if (length(row_username)) {
-      row_password <- dplyr::filter(data,dplyr::row_number() == row_username)
+      # row_password <- dplyr::filter(data,dplyr::row_number() == row_username) 
+      row_password <- dplyr::filter(data,dplyr::row_number() %in% row_username) #
       row_password <- dplyr::pull(row_password, !!pwds)
       if (sodium_hashed) {
-        password_match <- sodium::password_verify(row_password, input$password)
+        # password_match <- sodium::password_verify(row_password, input$password)
+        password_match <- which(mapply(sodium::password_verify, row_password, input$password)) #
+        row_password <- row_password[password_match] #
+        password_match <- any(password_match) #
       } else {
         password_match <- identical(row_password, input$password)
       }
