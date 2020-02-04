@@ -116,9 +116,10 @@ login <- function(input, output, session, data, user_col, pwd_col, sodium_hashed
       row_password <- dplyr::pull(row_password, !!pwds)
       if (sodium_hashed) {
         # password_match <- sodium::password_verify(row_password, input$password)
-        password_match <- which(mapply(sodium::password_verify, row_password, input$password)) #
+        password_which <- which(mapply(sodium::password_verify, row_password, input$password)) #
         row_password <- row_password[[password_match]] #
-        password_match <- any(password_match) #
+        password_match <- any(password_which) #
+        row_user_pw <- row_username[[password_which]]
       } else {
         password_match <- identical(row_password, input$password)
       }
@@ -127,9 +128,11 @@ login <- function(input, output, session, data, user_col, pwd_col, sodium_hashed
     }
     
     # if user name row and password name row are same, credentials are valid
-    if (length(row_username) == 1 && password_match) {
+    # if (length(row_username) == 1 && password_match) {
+    if (length(row_username) && password_match) {
       credentials$user_auth <- TRUE
-      credentials$info <- dplyr::filter(data, !!users == input$user_name)
+      # credentials$info <- dplyr::filter(data, !!users == input$user_name)
+      credentials$info <- dplyr::filter(data, dplyr::row_number() == row_user_pw) #
     } else { # if not valid temporarily show error message to user
       shinyjs::toggle(id = "error", anim = TRUE, time = 1, animType = "fade")
       shinyjs::delay(5000, shinyjs::toggle(id = "error", anim = TRUE, time = 1, animType = "fade"))
